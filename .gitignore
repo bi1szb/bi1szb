@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.venv/
+venv/
+env/
+
+*.nii.gz
+*.jpg
+*.jpeg
+*.png
+*.bmp
+
+data/seg/
+dataset/
+U disk/
+.git_broken_backup*/
+
+~$*
+*.xlsx
+*.tmp
+*.log
