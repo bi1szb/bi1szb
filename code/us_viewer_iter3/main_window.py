@@ -1053,18 +1053,40 @@ class MainWindow(QMainWindow):
 
     def interpolate_angles(self, left: CuttingPlanPoint, right: CuttingPlanPoint, t: float, index: int):
         default_angles = self.default_angles_for_index(index)
-        if len(left.angles) != len(default_angles) or len(right.angles) != len(default_angles):
-            return default_angles
-        return [left.angles[i] + (right.angles[i] - left.angles[i]) * t for i in range(len(default_angles))]
+        count = len(default_angles)
+        left_angles = self.angles_for_count(left, count)
+        right_angles = self.angles_for_count(right, count)
+        return [left_angles[i] + (right_angles[i] - left_angles[i]) * t for i in range(count)]
+
+    def angles_for_count(self, point: CuttingPlanPoint, count: int):
+        angles = self.normalize_cut_angles(point.angles)
+        if len(angles) == count:
+            return angles
+        if count == 2 and len(angles) == 4:
+            return self.normalize_cut_angles([angles[0], angles[3]])
+        if count == 4 and len(angles) == 2:
+            middle = (angles[0] + angles[1]) / 2.0
+            return self.normalize_cut_angles([angles[0], middle, middle, angles[1]])
+        return self.normalize_cut_angles((angles + self.default_angles_for_index(point.transverse_index))[:count])
 
     def interpolate_radii(self, left: CuttingPlanPoint, right: CuttingPlanPoint, t: float, angle_count: int):
         count = 2 if angle_count == 4 else 1
-        left_values = self.normalize_cut_radii(getattr(left, "radii", None), count, getattr(left, "radius", DEFAULT_CUT_DEPTH_PIXEL))
-        right_values = self.normalize_cut_radii(getattr(right, "radii", None), count, getattr(right, "radius", DEFAULT_CUT_DEPTH_PIXEL))
+        left_values = self.radii_for_count(left, count)
+        right_values = self.radii_for_count(right, count)
         return self.normalize_cut_radii(
             [left_values[i] + (right_values[i] - left_values[i]) * t for i in range(count)],
             count,
         )
+
+    def radii_for_count(self, point: CuttingPlanPoint, count: int):
+        radii = self.point_radii(point)
+        if len(radii) == count:
+            return radii
+        if count == 1 and len(radii) == 2:
+            return [min(radii)]
+        if count == 2 and len(radii) == 1:
+            return [radii[0], radii[0]]
+        return self.normalize_cut_radii(radii, count, getattr(point, "radius", DEFAULT_CUT_DEPTH_PIXEL))
 
     def interpolated_cut_region(self, index: int):
         if not self.cut_plan:
